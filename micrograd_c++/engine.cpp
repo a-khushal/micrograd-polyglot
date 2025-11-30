@@ -1,8 +1,8 @@
-#include <iostream>
 #include <cmath>
 #include <string>
 #include <set>
 #include <functional>
+#include <iostream>
 
 class Value {
     public:
@@ -74,12 +74,64 @@ class Value {
 
         return out;
     }
+
+    void backward() {
+        std::vector<Value*> topo;
+        std::set<Value*> visited;
+
+        std::function<void(Value*)> fn_topo = [&](Value* v) {
+            if (visited.find(v) == visited.end()) {
+                visited.insert(v);
+                for (auto child: v->_prev) {
+                    fn_topo(child);
+                }
+                topo.push_back(v);
+            }
+        };
+
+        fn_topo(this);
+
+        this->grad = 1.0;
+        for (auto v: topo) {
+            v->_backward();
+        }
+    }
+
+    Value* operator-() {
+        return (*this) * -1;
+    }
+
+    Value* operator-(Value& other) {
+        return (*this) + (*(-other));
+    }
+
+    Value* operator/(Value& other) {
+        return (*this) * (*(other.pow(-1)));
+    }
 };
 
-int main() {
-    Value a = Value(2.0);
-    int b = 3.0;
-    Value* c = a * b;
-    std::cout << c->data << std::endl;
-    return 0;
+// C++ equivalent of Python's __repr__ - allows printing with std::cout << value
+std::ostream& operator<<(std::ostream& os, const Value& v) {
+    os << "Value(data=" << v.data << ", grad=" << v.grad << ")";
+    return os;
+}
+
+Value* operator+(int self, Value& other) {
+    Value* self_val = new Value(self);
+    return self_val->operator+(other);
+}
+
+Value* operator-(int self, Value& other) {
+    Value* self_val = new Value(self);
+    return self_val->operator-(other);
+}
+
+Value* operator*(int self, Value& other) {
+    Value* self_val = new Value(self);
+    return self_val->operator*(other);
+}
+
+Value* operator/(int self, Value& other) {
+    Value* self_val = new Value(self);
+    return self_val->operator/(other);
 }
